@@ -1,0 +1,25 @@
+{
+    "name": "creof/doctrine2-namespace-namingstrategy",
+    "type": "library",
+    "description": "Doctrine2 naming strategy incorporating class namespace into names",
+    "keywords": ["doctrine2", "orm", "namingstrategy", "namespace"],
+    "authors": [
+        {
+            "name": "Derek Lambert",
+            "email": "dlambert@dereklambert.com"
+        }
+    ],
+    "license": "MIT",
+    "require": {
+        "doctrine/orm": ">=2.3"
+    },
+    "require-dev": {
+        "doctrine/common": ">=2.3",
+        "doctrine/dbal": ">=2.3"
+    },
+    "autoload": {
+        "psr-0": {
+            "CrEOF\\Doctrine\\ORM\\Mapping": "lib/"
+        }
+    }
+}
