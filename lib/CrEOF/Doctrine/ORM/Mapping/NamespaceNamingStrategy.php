@@ -62,7 +62,7 @@ class NamespaceNamingStrategy implements NamingStrategy
      *
      * @var string
      */
-    protected $separator = '_';
+    protected $namespaceSeparator = '_';
 
     /**
      * Fallback trim type if no entity namespace matched
@@ -277,9 +277,9 @@ class NamespaceNamingStrategy implements NamingStrategy
      *
      * @return self
      */
-    public function setSeparator($separator)
+    public function setNamespaceSeparator($separator)
     {
-        $this->separator = $separator;
+        $this->namespaceSeparator = $separator;
 
         return $this;
     }
@@ -289,9 +289,9 @@ class NamespaceNamingStrategy implements NamingStrategy
      *
      * @return string
      */
-    public function getSeparator()
+    public function getNamespaceSeparator()
     {
-        return $this->separator;
+        return $this->namespaceSeparator;
     }
 
     /**
@@ -343,7 +343,7 @@ class NamespaceNamingStrategy implements NamingStrategy
 
         if (false !== $isNamespaced) {
             $name = substr($name, 0, $isNamespaced + 1) . $entityName;
-            $name = str_replace('\\', $this->getSeparator(), $name);
+            $name = str_replace('\\', $this->getNamespaceSeparator(), $name);
         } else {
             $name = $entityName;
         }
