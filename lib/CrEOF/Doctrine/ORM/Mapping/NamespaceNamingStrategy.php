@@ -132,54 +132,58 @@ class NamespaceNamingStrategy implements NamingStrategy
     protected $joinColumnOrder = self::ORDER_PREPEND;
 
     /**
-     * Property name placement in join table name
+     * Target name placement in join table name
      *
      * @var int
      */
     protected $joinTableOrder = self::ORDER_APPEND;
 
     /**
+     * Split camel cased names with separator
+     *
+     * @var bool
+     */
+    protected $splitCamelCase = false;
+
+    /**
+     * Camel case hump separator
+     *
+     * @var string
+     */
+    protected $camelCaseSeparator = '';
+
+    /**
      * @param string $string
      *
      * @return array
      */
-//    private function splitCamelCase($string)
-//    {
-//        $pieces = preg_split('/(?=[A-Z])/', $string);
-//
-//        array_walk($pieces,
-//            function(&$value)
-//            {
-//                $value = ucfirst($value);
-//            }
-//        );
-//
-//        return $pieces;
-//    }
+    protected function splitCamelCase($string)
+    {
+        $pieces = preg_split('/(?=(?<!^)(?<=[a-z])[A-Z])/', $string);
+
+        return implode($this->getCamelCaseSeparator(), $pieces);
+    }
 
     /**
-     * @param array $pieces
+     * Return the last name in a namespace string
      *
-     * @return mixed
+     * @param string $className
+     *
+     * @return string
      */
-//    private function singularLast(array $pieces)
-//    {
-//        $patterns = array(
-//            0 => '/s$/'
-//        );
-//
-//        $replacements = array(
-//            0 => ''
-//        );
-//
-//        return preg_replace($patterns, $replacements, $pieces);
-//    }
-
     protected function getClassName($className)
     {
         return substr($className, strrpos($className, '\\') + 1);
     }
 
+    /**
+     * Remove namespace prefix from class name if matched
+     *
+     * @param string $className
+     * @param string $namespace
+     *
+     * @return bool|string
+     */
     protected function trimClassNameByNamespace($className, $namespace)
     {
         if (strpos($className, $namespace) === 0) {
@@ -228,6 +232,10 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     protected function applyCase($value)
     {
+        if ($this->isSplitCamelCase()) {
+            $value = $this->splitCamelCase($value);
+        }
+
         switch ($this->getCase()) {
             case self::CASE_MIXED:
                 return $value;
@@ -259,6 +267,17 @@ class NamespaceNamingStrategy implements NamingStrategy
         return implode('\\', $pieces);
     }
 
+    /**
+     * Join two names in the order specified with separator
+     *
+     * @param string $rootName
+     * @param string $addName
+     * @param int    $order
+     * @param string $separator
+     *
+     * @return string
+     * @throws \Exception
+     */
     protected function joinNames($rootName, $addName, $order, $separator)
     {
         switch ($order) {
@@ -275,14 +294,30 @@ class NamespaceNamingStrategy implements NamingStrategy
                 throw new \Exception('Unknown join order');
         }
 
-        if ($separator) {
-            return $this->applyCase($one . $separator .  $two);
-        } else {
-            return $this->applyCase($one . ucfirst($two));
+        if ($this->getCase() !== self::CASE_LOWER && ! $separator) {
+            $two = ucfirst($two);
         }
+
+        return $one . $separator . $two;
     }
 
+    protected function getTableName($className)
+    {
+        $name = $this->trimClassNameByEntityNamespaces($className);
+
+        if ($this->isTrimAbstract()) {
+            $name = $this->trimAbstract($name);
+        }
+
+        $name = str_replace('\\', $this->getNamespaceSeparator(), $name);
+
+        return $name;
+    }
+
+
     /**
+     * Construct NamespaceNamingStrategy with optional config
+     *
      * @param array $config
      */
     public function __construct(array $config = array())
@@ -291,6 +326,8 @@ class NamespaceNamingStrategy implements NamingStrategy
     }
 
     /**
+     * Configure options from array
+     *
      * @param array $config
      *
      * @return self
@@ -541,7 +578,7 @@ class NamespaceNamingStrategy implements NamingStrategy
     }
 
     /**
-     * Set property name placement in join table name
+     * Set target name placement in join table name
      *
      * @param int $order
      *
@@ -555,7 +592,7 @@ class NamespaceNamingStrategy implements NamingStrategy
     }
 
     /**
-     * Get property name placement in join table name
+     * Get target name placement in join table name
      *
      * @return int
      */
@@ -565,19 +602,59 @@ class NamespaceNamingStrategy implements NamingStrategy
     }
 
     /**
+     * Set split camel cased names flag
+     *
+     * @param bool $split
+     *
+     * @return self
+     */
+    public function setSplitCamelCase($split)
+    {
+        $this->splitCamelCase = (bool) $split;
+
+        return $this;
+    }
+
+    /**
+     * Get split camel cases names flag
+     *
+     * @return bool
+     */
+    public function isSplitCamelCase()
+    {
+        return $this->splitCamelCase;
+    }
+
+    /**
+     * Set camel case hump separator
+     *
+     * @param string $separator
+     *
+     * @return self
+     */
+    public function setCamelCaseSeparator($separator)
+    {
+        $this->camelCaseSeparator = $separator;
+
+        return $this;
+    }
+
+    /**
+     * Get camel case hump separator
+     *
+     * @return string
+     */
+    public function getCamelCaseSeparator()
+    {
+        return $this->camelCaseSeparator;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function classToTableName($className)
     {
-        $name = $this->trimClassNameByEntityNamespaces($className);
-
-        if ($this->isTrimAbstract()) {
-            $name = $this->trimAbstract($name);
-        }
-
-        $name = str_replace('\\', $this->getNamespaceSeparator(), $name);
-
-        return $this->applyCase($name);
+        return $this->applyCase($this->getTableName($className));
     }
 
     /**
@@ -601,27 +678,11 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinColumnName($propertyName)
     {
-        switch ($this->getJoinColumnOrder()) {
-            case self::ORDER_PREPEND:
-                $one = $this->getReferenceColumnName();
-                $two = $propertyName;
-                break;
-            case self::ORDER_APPEND:
-                $one = $propertyName;
-                $two = $this->getReferenceColumnName();
-                break;
-            default:
-                // TODO: define custom exception
-                throw new \Exception('Unknown join column order');
-        }
-
-        $separator = $this->getJoinColumnSeparator();
-
-        if ($separator) {
-            return $this->applyCase($one . $separator .  $two);
-        } else {
-            return $this->applyCase($one . ucfirst($two));
-        }
+        return $this->joinNames($this->propertyToColumnName($propertyName),
+            $this->referenceColumnName(),
+            $this->getJoinColumnOrder(),
+            $this->getJoinColumnSeparator()
+        );
     }
 
     /**
@@ -629,27 +690,11 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinTableName($sourceEntity, $targetEntity, $propertyName = null)
     {
-        switch ($this->getJoinTableOrder()) {
-            case self::ORDER_PREPEND:
-                $one = $this->classToTableName($sourceEntity);
-                $two = $propertyName;
-                break;
-            case self::ORDER_APPEND:
-                $one = $propertyName;
-                $two = $this->classToTableName($sourceEntity);
-                break;
-            default:
-                // TODO: define custom exception
-                throw new \Exception('Unknown join table order');
-        }
-
-        $separator = $this->getJoinTableSeparator();
-
-        if ($separator) {
-            return $this->applyCase($one . $separator .  $two);
-        } else {
-            return $this->applyCase($one . ucfirst($two));
-        }
+        return $this->joinNames($this->classToTableName($sourceEntity),
+            $this->classToTableName($targetEntity),
+            $this->getJoinTableOrder(),
+            $this->getJoinTableSeparator()
+        );
     }
 
     /**
@@ -657,8 +702,10 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinKeyColumnName($entityName, $referencedColumnName = null)
     {
-        return $this->referenceColumnName() . $this->getShortName($entityName);
-//        return strtolower($this->classToTableName($entityName) . '_' .
-//                ($referencedColumnName ?: $this->referenceColumnName()));
+        return $this->joinNames($this->classToTableName($entityName),
+            ($referencedColumnName ? $this->applyCase($referencedColumnName) : $this->referenceColumnName()),
+            $this->getJoinColumnOrder(),
+            $this->getJoinColumnSeparator()
+        );
     }
 }
