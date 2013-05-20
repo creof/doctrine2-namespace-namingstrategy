@@ -256,7 +256,8 @@ class NamespaceNamingStrategy implements NamingStrategy
      *
      * @return string
      */
-    protected function trimAbstract($className) {
+    protected function trimAbstract($className)
+    {
         $pieces     = explode('\\', $className);
         $classPiece = count($pieces) - 1;
 
