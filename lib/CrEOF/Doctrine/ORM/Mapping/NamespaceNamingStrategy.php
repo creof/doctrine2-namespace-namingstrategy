@@ -324,11 +324,7 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function classToTableName($className)
     {
-        $name = $className;
-
-        if (count($this->getEntityNamespaces())) {
-            $name = $this->trimClassNameByEntityNamespaces($name);
-        }
+        $name = $this->trimClassNameByEntityNamespaces($className);
 
         $isNamespaced = strrpos($name, '\\');
 
