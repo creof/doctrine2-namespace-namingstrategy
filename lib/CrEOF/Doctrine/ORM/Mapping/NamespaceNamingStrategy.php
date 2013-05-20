@@ -294,7 +294,7 @@ class NamespaceNamingStrategy implements NamingStrategy
                 throw new \Exception('Unknown join order');
         }
 
-        if ($this->getCase() !== self::CASE_LOWER && ! $separator) {
+        if ( ! $separator) {
             $two = ucfirst($two);
         }
 
@@ -678,11 +678,11 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinColumnName($propertyName)
     {
-        return $this->joinNames($this->propertyToColumnName($propertyName),
-            $this->referenceColumnName(),
+        return $this->applyCase($this->joinNames($propertyName,
+            $this->getReferenceColumnName(),
             $this->getJoinColumnOrder(),
             $this->getJoinColumnSeparator()
-        );
+        ));
     }
 
     /**
@@ -690,11 +690,11 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinTableName($sourceEntity, $targetEntity, $propertyName = null)
     {
-        return $this->joinNames($this->classToTableName($sourceEntity),
-            $this->classToTableName($targetEntity),
+        return $this->applyCase($this->joinNames($this->getTableName($sourceEntity),
+            $this->getTableName($targetEntity),
             $this->getJoinTableOrder(),
             $this->getJoinTableSeparator()
-        );
+        ));
     }
 
     /**
@@ -702,10 +702,10 @@ class NamespaceNamingStrategy implements NamingStrategy
      */
     public function joinKeyColumnName($entityName, $referencedColumnName = null)
     {
-        return $this->joinNames($this->classToTableName($entityName),
-            ($referencedColumnName ? $this->applyCase($referencedColumnName) : $this->referenceColumnName()),
+        return $this->applyCase($this->joinNames($this->getTableName($entityName),
+            ($referencedColumnName ?: $this->getReferenceColumnName()),
             $this->getJoinColumnOrder(),
             $this->getJoinColumnSeparator()
-        );
+        ));
     }
 }
