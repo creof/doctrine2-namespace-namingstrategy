@@ -33,74 +33,43 @@ use Doctrine\ORM\Mapping\NamingStrategy;
  */
 class NamespaceNamingStrategy implements NamingStrategy
 {
-    protected $entityNamespace;
+    /**
+     * When no entity namespace matched use namespaced class name
+     */
+    const FALLBACK_USE_FULL = 1;
 
     /**
-     * {@inheritdoc}
+     * When no entity namespace matched use class name
      */
-    public function classToTableName($className)
-    {
-        if ($this->entityNamespace && strpos($className, $this->entityNamespace) === 0) {
-            return str_replace('\\', '_', substr($className, strlen($this->entityNamespace) + 1));
-        }
-
-        if (strpos($className, '\\') !== false) {
-            return substr($className, strrpos($className, '\\') + 1);
-        }
-
-        return $className;
-    }
+    const FALLBACK_USE_CLASS = 2;
 
     /**
-     * {@inheritdoc}
+     * When true trim 'Abstract' from the beginning of class names
+     *
+     * @var bool
      */
-    public function propertyToColumnName($propertyName, $className = null)
-    {
-        return $propertyName;
-    }
+    protected $trimAbstract = false;
 
     /**
-     * {@inheritdoc}
+     * Array containing entity namespaces
+     *
+     * @var array
      */
-    public function referenceColumnName()
-    {
-        return 'id';
-    }
+    protected $entityNamespaces = array();
 
     /**
-     * {@inheritdoc}
+     * Namespace path separator
+     *
+     * @var string
      */
-    public function joinColumnName($propertyName)
-    {
-        return $this->referenceColumnName() . ucfirst($propertyName);
-    }
+    protected $separator = '_';
 
     /**
-     * {@inheritdoc}
+     * Fallback trim type if no entity namespace matched
+     *
+     * @var int
      */
-    public function joinTableName($sourceEntity, $targetEntity, $propertyName = null)
-    {
-        //return $this->classToTableName($sourceEntity) . '_' . implode('_', $this->singularLast($this->splitCamelCase($propertyName)));
-        return $this->classToTableName($sourceEntity) . '_' . ucfirst($propertyName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function joinKeyColumnName($entityName, $referencedColumnName = null)
-    {
-        return $this->referenceColumnName() . $this->getShortName($entityName);
-//        return strtolower($this->classToTableName($entityName) . '_' .
-//                ($referencedColumnName ?: $this->referenceColumnName()));
-    }
-
-    /**
-     * @param string $entityNamespace
-     */
-    public function setEntityNamespace($entityNamespace)
-    {
-        $this->entityNamespace = $entityNamespace;
-    }
+    protected $trimFallback = self::FALLBACK_USE_CLASS;
 
     /**
      * @param string $string
@@ -160,5 +129,276 @@ class NamespaceNamingStrategy implements NamingStrategy
             default:
                 return implode('', $pieces);
         }
+    }
+
+    protected function getClassName($className)
+    {
+        return substr($className, strrpos($className, '\\') + 1);
+    }
+
+    protected function trimClassNameByNamespace($className, $namespace)
+    {
+        if (strpos($className, $namespace) === 0) {
+            return substr($className, strlen($namespace) + 1);
+        }
+
+        return false;
+    }
+
+    protected function trimClassNameByEntityNamespaces($className)
+    {
+        foreach ($this->getEntityNamespaces() as $entityNamespace) {
+            $result = $this->trimClassNameByNamespace($className, $entityNamespace);
+
+            if ($result) {
+                return $result;
+            }
+        }
+
+        switch ($this->getTrimFallback()) {
+            case self::FALLBACK_USE_CLASS:
+                return $this->getClassName($className);
+            case self::FALLBACK_USE_FULL:
+                //no break
+            default:
+                return $className;
+        }
+    }
+
+    /**
+     * Trim 'Abstract' from beginning of class name
+     *
+     * @param string $className
+     *
+     * @return string
+     */
+    protected function trimAbstract($className) {
+        if (0 === strpos($className, 'Abstract')) {
+            return substr($className, 8);
+        } else {
+            return $className;
+        }
+    }
+
+    /**
+     * @param array $config
+     */
+    public function __construct(array $config = array())
+    {
+        $this->setConfig($config);
+    }
+
+    /**
+     * @param array $config
+     *
+     * @return self
+     */
+    public function setConfig(array $config)
+    {
+        foreach ($config as $key => $value) {
+            $method = 'set' . ucfirst($key);
+
+            if (method_exists($this, $method)) {
+                $this->$method($value);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Set the value of the trimAbstract flag
+     *
+     * @param bool $flag
+     *
+     * @return self
+     */
+    public function setTrimAbstract($flag = true)
+    {
+        $this->trimAbstract = (bool) $flag;
+
+        return $this;
+    }
+
+    /**
+     * Get the value of the trimAbstract flag
+     *
+     * @return bool
+     */
+    public function isTrimAbstract()
+    {
+        return $this->trimAbstract;
+    }
+
+    /**
+     * Set entity namespaces
+     *
+     * @param array $namespaces
+     *
+     * @return self
+     */
+    public function setEntityNamespaces(array $namespaces)
+    {
+        foreach ($namespaces as $namespace) {
+            $this->addEntityNamespace($namespace);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Add namespace to entity namespace array
+     *
+     * @param string $namespace
+     *
+     * @return self
+     */
+    public function addEntityNamespace($namespace)
+    {
+        $this->entityNamespaces[] = $namespace;
+
+        return $this;
+    }
+
+    /**
+     * Get entity namespaces
+     *
+     * @return array
+     */
+    public function getEntityNamespaces()
+    {
+        return $this->entityNamespaces;
+    }
+
+    /**
+     * Set namespace path separator
+     *
+     * @param string $separator
+     *
+     * @return self
+     */
+    public function setSeparator($separator)
+    {
+        $this->separator = $separator;
+
+        return $this;
+    }
+
+    /**
+     * Get namespace path separator
+     *
+     * @return string
+     */
+    public function getSeparator()
+    {
+        return $this->separator;
+    }
+
+    /**
+     * Set fallback trim type if no entity namespace matched
+     *
+     * @param int $fallback
+     *
+     * @return self
+     */
+    public function setTrimFallback($fallback)
+    {
+        $this->trimFallback = $fallback;
+
+        return $this;
+    }
+
+    /**
+     * Get fallback trim type if no entity namespace matched
+     *
+     * @return int
+     */
+    public function getTrimFallback()
+    {
+        return $this->trimFallback;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function classToTableName($className)
+    {
+        $name = $className;
+
+        if (count($this->getEntityNamespaces())) {
+            $name = $this->trimClassNameByEntityNamespaces($name);
+        }
+
+        $isNamespaced = strrpos($name, '\\');
+
+        if (false !== $isNamespaced) {
+            $entityName = substr($name, $isNamespaced + 1);
+        } else {
+            $entityName = $name;
+        }
+
+        if ($this->isTrimAbstract()) {
+            $entityName = $this->trimAbstract($entityName);
+        }
+
+        if (false !== $isNamespaced) {
+            $name = substr($name, 0, $isNamespaced + 1) . $entityName;
+            $name = str_replace('\\', $this->getSeparator(), $name);
+        } else {
+            $name = $entityName;
+        }
+
+        return $name;
+
+//        if ($this->entityNamespace && strpos($className, $this->entityNamespace) === 0) {
+//            return str_replace('\\', '_', substr($className, strlen($this->entityNamespace) + 1));
+//        }
+//
+//        if (strpos($className, '\\') !== false) {
+//            return substr($className, strrpos($className, '\\') + 1);
+//        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function propertyToColumnName($propertyName, $className = null)
+    {
+        return $propertyName;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function referenceColumnName()
+    {
+        return 'id';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function joinColumnName($propertyName)
+    {
+        return $this->referenceColumnName() . ucfirst($propertyName);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function joinTableName($sourceEntity, $targetEntity, $propertyName = null)
+    {
+        //return $this->classToTableName($sourceEntity) . '_' . implode('_', $this->singularLast($this->splitCamelCase($propertyName)));
+        return $this->classToTableName($sourceEntity) . '_' . ucfirst($propertyName);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function joinKeyColumnName($entityName, $referencedColumnName = null)
+    {
+        return $this->referenceColumnName() . $this->getShortName($entityName);
+//        return strtolower($this->classToTableName($entityName) . '_' .
+//                ($referencedColumnName ?: $this->referenceColumnName()));
     }
 }
