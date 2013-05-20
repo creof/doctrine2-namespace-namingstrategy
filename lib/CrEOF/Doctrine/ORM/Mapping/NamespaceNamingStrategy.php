@@ -159,9 +159,10 @@ class NamespaceNamingStrategy implements NamingStrategy
             case self::FALLBACK_USE_CLASS:
                 return $this->getClassName($className);
             case self::FALLBACK_USE_FULL:
-                //no break
-            default:
                 return $className;
+            default:
+                // TODO: define custom exception
+                throw new \Exception('Unknown trim fallback');
         }
     }
 
