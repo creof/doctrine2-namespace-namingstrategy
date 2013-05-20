@@ -17,7 +17,23 @@ Add the "creof/doctrine2-namespace-namingstrategy" package into your composer.js
 To use the naming scheme a new instance will need to be created and passed to the entity manager configuration object.
 
 ### Symfony
-Create a service in your app config and pass the service to the Doctrine entity mananger
+Create a service in your app config and pass the service to the Doctrine entity mananger:
+
+    # Doctrine Configuration
+    doctrine:
+        orm:
+            naming_strategy: namespace_naming_strategy
+
+    services:
+        namespace_naming_strategy:
+            class: CrEOF\Doctrine\ORM\Mapping\NamespaceNamingStrategy
+            arguments:
+                config:
+                    entityNamespaces:
+                        - "Acme\Bundle\AcmeBundle"
+                    trimAbstract: true
+
+To use the class constants you'll need to define the service in XML or lookup the integer values in the code.
 
 ## Configuration
 
