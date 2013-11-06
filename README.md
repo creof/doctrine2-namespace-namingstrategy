@@ -17,7 +17,7 @@ Add the "creof/doctrine2-namespace-namingstrategy" package into your composer.js
 To use the naming scheme a new instance will need to be created and passed to the entity manager configuration object.
 
 ### Symfony
-Create a service in your app config and pass the service to the Doctrine entity mananger:
+Create a service in your app config and pass the service to the Doctrine entity manager:
 
     # Doctrine Configuration
     doctrine:
@@ -39,21 +39,21 @@ To use the class constants you'll need to define the service in XML or lookup th
 
 The NamespaceNamingStrategy constructor accepts an array containing one or more of the following options:
 
- - trimAbstract - Remove "Abstract" from all class names begining with it. Default false.
+ - trimAbstract - Remove "Abstract" from all class names beginning with it. Default false.
 
- - entityNamespaces - Array containg the root(s) of entity classes. These roots will be removed from generated names.
+ - entityNamespaces - Array containing the root(s) of entity classes. These roots will be removed from generated names.
 
  - namespaceSeparator - String used to separate namespace path components when generating names. Default is "_" (underscore).
 
  - joinColumnSeparator - String used to separate the reference column name from the property name. Default is "" (empty).
 
- - joinTableSerarator - String used to serarate entity names when generating join table names. Default is "_" (underscore).
+ - joinTableSeparator - String used to separate entity names when generating join table names. Default is "_" (underscore).
 
  - trimFallback - One of the two FALLBACK class constants. This setting defines the behavior when no matching namespace in entityNamespaces can be found for a class.
 
  - case - One of the three CASE class constants. This setting defines whether names are generated in mixed, lower, or upper case.
 
- - referenceColumnName - This defines the name used/concationated when generating reference column names. Default is "id".
+ - referenceColumnName - This defines the name used/concatenated when generating reference column names. Default is "id".
 
  - joinColumnOrder - One of the two ORDER class constants. This defines whether the reference column name is prepended or appended to the entity name.
 
